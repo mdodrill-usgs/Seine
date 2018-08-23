@@ -101,9 +101,10 @@ p
 #-----------------------------------------------------------------------------#
 name = "Ncat"
 
-rm.key = data.frame(river_mile = sub.cat.2$start_rm,
-                    num = 1:dim(sub.cat.2)[1],
-                    sp = sub.cat.2$species_code)
+rm.key = data.frame(river_mile = cat.2$start_rm,
+                    num = 1:dim(cat.2)[1],
+                    sp = cat.2$species_code,
+                    year = cat.2$year)
 
 tmp = coda::mcmc.list(lapply(1:fit$model$nchain(), function(x) coda::mcmc(fit$BUGSoutput$sims.array[,x,])))
 

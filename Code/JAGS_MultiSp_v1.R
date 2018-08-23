@@ -11,7 +11,7 @@
 #
 ###############################################################################
 setwd('C:/Users/mdodrill/Desktop/Fish_Git/Seine/Data/')
-rm(list = ls(all = TRUE))
+# rm(list = ls(all = TRUE))
 library(R2jags)
 
 
@@ -35,30 +35,33 @@ dim(catch)
 Npass_r = as.numeric(d1_r$n_pass)
 Nsamps_r = dim(catch)[1]
 
-
 sp = as.numeric(d1_r$species)
 
 tmp = droplevels(d1_r)
 
 #-----------------------------------------------------------------------------#
-cat = read.csv(file = "SN_2016_data.csv", header = T, stringsAsFactors = F)
+# cat = read.csv(file = "SN_2016_data.csv", header = T, stringsAsFactors = F)
+# 
+# 
+# # take out the species subset here... done in data step
+# u.sp = as.character(unique(tmp$species))
+# 
+# sub.cat = cat[which(cat$species_code %in% u.sp),]
+# 
+# cat.2 = sub.cat[order(as.factor(sub.cat$species_code)),]
 
-u.sp = as.character(unique(tmp$species))
+#--------------
+cat.2 = cat[order(as.factor(cat$species_code)),]
 
-sub.cat = cat[which(cat$species_code %in% u.sp),]
+sp2 = as.numeric(as.factor(cat.2$species_code))
 
-sub.cat.2 = sub.cat[order(as.factor(sub.cat$species_code)),]
+Nsamps_cat = dim(cat.2)[1]
 
-
-sp2 = as.numeric(as.factor(sub.cat.2$species_code))
-
-Nsamps_cat = dim(sub.cat.2)[1]
-
-catch2 = sub.cat.2$tot.catch
+catch2 = cat.2$tot.catch
 
 
 #-----------------------------------------------------------------------------#
-sink("JAGS_Working_test.jags")
+sink("JAGS_working_test.jags")
 cat("
 model{
   
@@ -70,12 +73,12 @@ model{
   tau ~ dunif(0, 2)
   
   for(i in 1:Nsp){
-    mean.p[i] ~ dunif(0, 1)                       # Prior for mean
-    mu.p[i] <- log(mean.p[i] / (1 - mean.p[i]))         # Logit transformation 
+    mean.p[i] ~ dunif(0, 1)                        # Prior for mean
+    mu.p[i] <- log(mean.p[i] / (1 - mean.p[i]))    # Logit transformation 
   }
   
   for(i in 1:Nsp){
-    sigma.p[i] ~ dunif(0, 10)                     # Prior for standard deviation
+    sigma.p[i] ~ dunif(0, 10)                      # Prior for standard deviation
     tau.p[i] <- pow(sigma.p[i], -2)
   }
   
@@ -126,15 +129,16 @@ inits <- function() list(N = N_guess)
 
 catch[is.na(catch)] <- 0 
 
-params = c("N", "p", "beta", "mean.p", "Ncat") 
+# params = c("N", "p", "beta", "mean.p", "Ncat") 
+params = c("Ncat") 
 
 data.in = list(Nsamps_r = Nsamps_r, Npass_r = Npass_r, catch = catch, sp = sp, Nsp = Nsp, 
                sp2 = sp2, Nsamps_cat = Nsamps_cat, catch2 = catch2) 
 
 ## MCMC settings
-ni <- 10000
+ni <- 5000
 nt <- 1
-nb <- 5000
+nb <- 2500
 
 fit <- jags(data = data.in, inits = inits, params, "JAGS_working_test.jags",
             n.chains = 3, n.iter = ni, n.thin = nt, n.burnin = nb)
@@ -147,19 +151,20 @@ fit <- jags(data = data.in, inits = inits, params, "JAGS_working_test.jags",
 
 # rm(list=setdiff(ls(), "fit"))
 
-f1 = coda::mcmc.list(lapply(1:fit$model$nchain(), function(x) coda::mcmc(fit$BUGSoutput$sims.array[,x,])))
+# f1 = coda::mcmc.list(lapply(1:fit$model$nchain(), function(x) coda::mcmc(fit$BUGSoutput$sims.array[,x,])))
 
-fit2 = as.mcmc(fit)
+# fit2 = as.mcmc(fit)
 #-----------------------------------------------------------------------------#
 library(fishR)
 
 out = organize(fit, par.name = "mean.p")
 
 
-windows()
+windows(record = T, xpos = 25)
 
 stan_trace(fit, "p", 1:7, same.scale = TRUE)
 stan_trace(fit, "mean.p", 1:7, same.scale = TRUE)
+stan_trace(fit, "mean.p", 1:3, same.scale = TRUE)
 
 #-----------------------------------------------------------------------------#
 # None of this works....:(

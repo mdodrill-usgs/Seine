@@ -27,6 +27,11 @@ sp.key = data.frame(name = unique(d1_r$species),
 sp.key.big = data.frame(name = d1_r$species,
                         num = 1:Nsamps_r)
 
+rm.key = data.frame(river_mile = cat.2$start_rm,
+                    num = 1:dim(cat.2)[1],
+                    sp = cat.2$species_code,
+                    year = cat.2$year)
+
 #-----------------------------------------------------------------------------#
 # individual p's for all site, species
 
@@ -53,7 +58,7 @@ p = ggplot(sm.p.dat, aes(x = value, group = Parameter)) +
 p
 
 
-#-----------------------------------------------------------------------------#
+#--------------------------------------
 # mean p's for each species 
 
 mu.p.dat = organize(fit = fit, par.name = "mean.p")
@@ -70,7 +75,7 @@ p = ggplot(mu.p.dat, aes(x = value, group = Parameter)) +
   guides(col = guide_legend(ncol = 3))
 p
 
-#-----------------------------------------------------------------------------#
+#--------------------------------------
 # both the mean.p and individual p's, facet by species 
 
 p = ggplot(sm.p.dat, aes(x = value, group = Parameter)) +
@@ -83,35 +88,20 @@ p = ggplot(sm.p.dat, aes(x = value, group = Parameter)) +
 p
 
 #-----------------------------------------------------------------------------#
-name = "Ncat"
+# Abundance
 
-rm.key = data.frame(river_mile = cat.2$start_rm,
-                    num = 1:dim(cat.2)[1],
-                    sp = cat.2$species_code,
-                    year = cat.2$year)
+N.dat = bayes_summary(fit = fit, par.name = "Ncat")
 
-tmp = coda::mcmc.list(lapply(1:fit$model$nchain(), function(x) coda::mcmc(fit$BUGSoutput$sims.array[,x,])))
-
-f1 = ggs(tmp)
-
-f1.sub = f1[which(substr(f1$Parameter,1,nchar(name)) == name),]
-
-all2 = group_by(f1.sub, Parameter) %>%
-  summarize(my.mean = mean(value),
-            upper = quantile(value, .95),
-            lower = quantile(value, .05))
-
-all2$id = as.numeric(gsub("[^0-9]", "", as.character(all2$Parameter)))
-
-all2$river_mile = rm.key[match(all2$id, rm.key$num),]$river_mile
-all2$sp = rm.key[match(all2$id, rm.key$num),]$sp
+N.dat$id = as.numeric(gsub("[^0-9]", "", as.character(N.dat$Parameter)))
+N.dat$river_mile = rm.key[match(N.dat$id, rm.key$num),]$river_mile
+N.dat$species = rm.key[match(N.dat$id, rm.key$num),]$sp
+N.dat$year = rm.key[match(N.dat$id, rm.key$num),]$year
 
 
-
-p = ggplot(all2, aes(y = my.mean, x = river_mile)) +
-  geom_point(aes(color = sp), shape = 1) +
-  geom_errorbar(aes(ymin = lower, ymax = upper, color = sp)) +
-  facet_wrap(~ sp, scales = "free_y") +
+p = ggplot(N.dat, aes(y = my.mean, x = river_mile)) +
+  geom_point(aes(color = species), shape = 1) +
+  geom_errorbar(aes(ymin = lower, ymax = upper, color = species)) +
+  facet_wrap(~ species, scales = "free_y") +
   theme_base() +
   theme(legend.position = c(.85,.15)) +
   guides(col = guide_legend(ncol = 3))
@@ -120,11 +110,21 @@ p
 
 
 
-# geom_point(data = pred, aes(y = my.mean, x = sz), size = 2, color = "black") +
-#   geom_errorbar(data = pred, aes(y = my.mean, ymin = lower, ymax = upper),
+N.hbc = N.dat[N.dat$species == "HBC",]
+
+p = ggplot(N.hbc, aes(y = my.mean, x = river_mile)) +
+  geom_point(aes(color = species), shape = 1) +
+  geom_errorbar(aes(ymin = lower, ymax = upper, color = species)) +
+  facet_wrap(~ year, scales = "free_y") +
+  theme_base() +
+  theme(legend.position = c(.85,.15)) +
+  guides(col = guide_legend(ncol = 3))
+
+p 
 
 
-
+#-----------------------------------------------------------------------------#
+# End
 
 
 

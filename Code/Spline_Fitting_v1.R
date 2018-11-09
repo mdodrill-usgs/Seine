@@ -44,7 +44,7 @@ N.hbc = N.dat[N.dat$species == "HBC",]
 
 
 b0 <- gam(my.mean ~ s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
-b0 <- gam(my.mean ~ s(river_mile, bs = "ad"), data = N.hbc, method = "REML")
+# b0 <- gam(my.mean ~ s(river_mile, bs = "ad"), data = N.hbc, method = "REML")
 
 
 # plot.gam()
@@ -56,9 +56,8 @@ b0 <- gam(my.mean ~ s(river_mile, bs = "ad"), data = N.hbc, method = "REML")
 
 new.dat = data.frame(river_mile = seq(min(N.hbc$river_mile),max(N.hbc$river_mile),5))
 
+
 tmp = predict.gam(b0, newdata = new.dat, se.fit = TRUE)
-
-
 
 out = data.frame(y_hat = tmp$fit,
                  upper = tmp$fit + 2*tmp$se.fit,
@@ -130,10 +129,40 @@ p = ggplot(all.out, aes(y = y_hat, x = river_mile)) +
 p
 
 
+b0 <- gam(my.mean ~ s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
 
-
+gam.check(b0,pch=19,cex=.3)
 
 #-----------------------------------------------------------------------------#
+
+
+b0 <- gam(my.mean ~ year + s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
+b1 <- gam(my.mean ~ s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
+b2 <- gam(my.mean ~ s(river_mile, bs = "ps", by = year), data = N.hbc, method = "REML")
+
+AIC(b0, b1, b2)
+
+
+new.dat.2 = data.frame(river_mile = 200,
+                       year = unique(N.hbc$year))
+
+
+
+tmp = predict.gam(b0, newdata = new.dat.2, se.fit = TRUE)
+tmp = predict.gam(b2, newdata = new.dat.2, se.fit = TRUE)
+
+
+out.2 = data.frame(y_hat = tmp$fit,
+                   upper = tmp$fit + 2*tmp$se.fit,
+                   lower = tmp$fit - 2*tmp$se.fit,
+                   year = new.dat.2$year)
+
+p = ggplot(out.2, aes(y = y_hat, x = year))+
+  geom_point() +
+  geom_errorbar(aes(ymin = lower, ymax = upper))
+p
+
+
 
 
 

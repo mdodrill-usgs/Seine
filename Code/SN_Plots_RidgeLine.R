@@ -14,8 +14,10 @@ library(ggmcmc)
 library(ggthemes)
 library(dplyr)
 library(ggridges)
+library(RColorBrewer)
+library(fishR)
 
-
+windows(record = TRUE, xpos = 25, height = 12, width = 10)
 #-----------------------------------------------------------------------------#
 # connect to db
 # my_db = src_sqlite(path = db_path, create = FALSE)
@@ -61,14 +63,16 @@ samp.cols = c("sample_id",
 # "station_id")
 
 
-all.sn = c('BL','BS','BX','SA','SB','SC','SEN','SG','SL','SS','SX','SN')
+all.sn = c('BL','BS','BX','SA','SB','SC','SEN','SG','SL','SS','SX','SN', 'EL', 'HB', "HS")
+# all.sn = c('BL','BS','BX','SA','SB','SC','SEN','SG','SL','SS','SX','SN')
+# all.sn = c('EL')
 
 sa1 = select(db_fish_samp, one_of(samp.cols)) %>% 
   filter(gear_code %in% all.sn,
          !is.na(start_rm),
          start_rm >= 0,
-         river_code == "COR",
-         hydraulic_code == "BA")     
+         river_code == "COR")
+         # hydraulic_code == "BA")     
 
 sa2 = collect(sa1)
 
@@ -76,9 +80,16 @@ sa2 = collect(sa1)
 #--------------------------------------
 # subset for year, but now, looks like its 2000 - present.
 sa2$year = substr(sa2$start_datetime, 1, 4)
-unique(sa2$year)
+# unique(sa2$year)
 
-sa3 = sa2[which(sa2$year %in% as.character(2000:2018)),]
+# sa3 = sa2[which(sa2$year %in% as.character(2000:2018)),]
+# unique(sa3$year)
+
+# only years that have SN data
+years = c("2000", "2002", "2003", "2004", "2005", "2006", "2007", "2008", 
+          "2009", "2012", "2013", "2014", "2016", "2015", "2017", "2018")
+
+sa3 = sa2[which(sa2$year %in% years),]
 
 #-----------------------------------------------------------------------------#
 # set up fish specimens
@@ -108,38 +119,28 @@ dat
 # There are a lot of total lengths of 0 or 1, need to fix or exclude...
 
 #-----------------------------------------------------------------------------#
+dat$gear = ifelse(dat$gear_code == "EL", "E Fishing", 
+                  ifelse(dat$gear_code %in% c("HB", "HS"), "Hoop", "Seine"))
+
 dat.2 = dat[which(dat$total_length >=5 ),]
 
-dat.3 = dat.2[dat.2$species_code %in% c("HBC", "FMS"),]
+# dat.3 = dat.2[dat.2$species_code %in% c("HBC", "FMS"),]
+dat.3 = dat.2[dat.2$species_code %in% c("HBC"),]
 
 # dat.4 = dat.3[dat.3$total_length <= 100,]
 
 
+# display.brewer.pal(11,"Spectral");brewer.pal(11,"Spectral")
 
-
-p = ggplot(dat.3, aes(x = total_length, y = year, fill = species_code)) +
-  # geom_density_ridges(fill = "dodgerblue", alpha = .2)+
-  geom_density_ridges()+
-  scale_fill_manual(values = c("#D55E0050", "#0072B250"), labels = c("female", "male")) +
-  scale_color_manual(values = c("#D55E00", "#0072B2"), guide = "none") +
-  # geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
-  scale_x_continuous(expand = c(0.01, 0), limits = c(0,300)) +
+p = ggplot(dat.3, aes(x = total_length, y = year, fill = gear)) +
+  geom_density_ridges(alpha = .75)+
+  scale_fill_manual(values = c("#F46D43", "#ABDDA4", "#3288BD")) +
+  scale_color_manual(values = c("#F46D43", "#ABDDA4", "#3288BD"), guide = "none") +
+  scale_x_continuous(expand = c(0.01, 0)) +
   scale_y_discrete(expand = c(0.01, 0)) +
-  # scale_fill_viridis(name = "s_river_mile", option = "C") +
-  labs(y = "", x = "Total Length (mm)", title = "Flannelmouth Sucker")
-# labs(y = "", x = "Total Length (mm)", title = "Humpback Chub")
+  labs(y = "", x = "Total Length (mm)", title = "Insert Title Here")
 p
 
-
-p = ggplot(dat.3, aes(x = total_length, y = year, fill = ..x..)) +
-  # geom_density_ridges(aes(fill = site)) 
-  geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
-  scale_x_continuous(expand = c(0.01, 0), limits = c(0,300)) +
-  scale_y_discrete(expand = c(0.01, 0)) +
-  scale_fill_viridis(name = "s_river_mile", option = "C") +
-  labs(y = "", x = "Total Length (mm)", title = "Flannelmouth Sucker")
-# labs(y = "", x = "Total Length (mm)", title = "Humpback Chub")
-p
 
 p2 = p + theme_base()
 
@@ -149,44 +150,54 @@ g = p2 + theme(panel.grid.major.y = element_line(colour = "gray"),
                axis.title.y = element_text(size = 14, vjust = 1),
                axis.text.x = element_text(size = 12, colour = "black"),
                axis.text.y = element_text(size = 12, colour = "black"),
-               legend.position = "none")
+               legend.position = c(.7,.975),
+               legend.title = element_blank()) +
+               guides(color = guide_legend(nrow = 1), fill = guide_legend(nrow = 1))
+
+g
+
+
+#-----------------------------------------------------------------------------#
+dat.2 = dat[which(dat$total_length >=5 ),]
+
+dat.3 = dat.2[dat.2$species_code %in% c("HBC"),]
+
+dat.4 = dat.3[dat.3$gear == "Seine",]
+
+tab = table(dat.4$year)
+
+d.text = data.frame(year = attributes(tab)$dimnames[[1]],
+                    lab = tab,
+                    gear = NA)
+
+p = ggplot(dat.4, aes(x = total_length, y = year, fill = gear)) +
+  geom_density_ridges(alpha = .75)+
+  scale_fill_manual(values = c("#3288BD")) +
+  # scale_color_manual(values = c("#3288BD"), guide = "none") +
+  scale_x_continuous(expand = c(0.01, 0)) +
+  scale_y_discrete(expand = c(0.01, 0)) +
+  geom_text(data = d.text, aes(y = year, x = 400,
+                               label = paste0("n = ",as.character(lab.Freq))),
+            color = "#3288BD", vjust = -1.5) +
+  labs(y = "", x = "Total Length (mm)", title = "Humpback Chub")
+p
+
+
+p2 = p + theme_base()
+
+g = p2 + theme(panel.grid.major.y = element_line(colour = "gray"),
+               panel.grid.minor  = element_line(colour = "white"),
+               axis.title.x = element_text(size = 14, vjust = -.1),
+               axis.title.y = element_text(size = 14, vjust = 1),
+               axis.text.x = element_text(size = 12, colour = "black"),
+               axis.text.y = element_text(size = 12, colour = "black"),
+               legend.position = c(.7,.975),
+               legend.title = element_blank()) +
+  guides(color = guide_legend(nrow = 1), fill = guide_legend(nrow = 1))
 
 g
 
 
 
 
-
-
-library(DAAG) # for ais dataset
-ais$sport <- factor(
-  ais$sport,
-  levels = c("B_Ball", "Field", "Gym", "Netball", "Row", "Swim", "T_400m", "T_Sprnt", "Tennis", "W_Polo"),
-  labels = c("Basketball", "Field", "Gym", "Netball", "Row", "Swim", "Track 400m", "Track Sprint", "Tennis", "Water Polo")
-)
-
-ggplot(ais, aes(x=ht, y=sport, color=sex, point_color=sex, fill=sex)) +
-  geom_density_ridges(
-    jittered_points=TRUE, scale = .95, rel_min_height = .01,
-    point_shape = "|", point_size = 3, size = 0.25,
-    position = position_points_jitter(height = 0)
-  ) +
-  scale_y_discrete(expand = c(.01, 0)) +
-  scale_x_continuous(expand = c(0, 0), name = "height [cm]") +
-  scale_fill_manual(values = c("#D55E0050", "#0072B250"), labels = c("female", "male")) +
-  scale_color_manual(values = c("#D55E00", "#0072B2"), guide = "none") +
-  scale_discrete_manual("point_color", values = c("#D55E00", "#0072B2"), guide = "none") +
-  guides(fill = guide_legend(
-    override.aes = list(
-      fill = c("#D55E00A0", "#0072B2A0"),
-      color = NA, point_color = NA))
-  ) +
-  ggtitle("Height in Australian athletes") +
-  theme_ridges(center = TRUE)
-
-
-
-
-
-
-
+#-----------------------------------------------------------------------------#

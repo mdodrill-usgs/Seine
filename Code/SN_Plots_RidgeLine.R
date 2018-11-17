@@ -128,21 +128,43 @@ dat.2 = dat[which(dat$total_length >=5 ),]
 dat.3 = dat.2[dat.2$species_code %in% c("HBC"),]
 
 # dat.4 = dat.3[dat.3$total_length <= 100,]
+d.text = select(dat.3, year, gear, species_code) %>%
+  group_by(year, gear) %>%
+  summarise(count = n())
 
 
-# display.brewer.pal(11,"Spectral");brewer.pal(11,"Spectral")
+display.brewer.pal(11,"Spectral");brewer.pal(11,"Spectral")
 
 p = ggplot(dat.3, aes(x = total_length, y = year, fill = gear)) +
-  geom_density_ridges(alpha = .75)+
-  scale_fill_manual(values = c("#F46D43", "#ABDDA4", "#3288BD")) +
-  scale_color_manual(values = c("#F46D43", "#ABDDA4", "#3288BD"), guide = "none") +
-  scale_x_continuous(expand = c(0.01, 0)) +
+  geom_density_ridges(alpha = .85)+
+  # scale_fill_brewer(palette = "Spectral") +
+  scale_fill_manual(values = c("#F46D43", "#FDAE61", "#3288BD")) +
+  # scale_color_manual(values = c("#F46D43", "#FDAE61", "#3288BD"), guide = "none") +
+  scale_x_continuous(expand = c(0.01, 0), limits = c(0,525)) +
   scale_y_discrete(expand = c(0.01, 0)) +
+  # geom_text(data = d.text, aes(y = year, x = 420, color = gear,
+  #                              label = paste0("n = ",as.character(count)))
+  #           , vjust = -.5, hjust = 1, size = 5, position = position_dodge(20)) +
+  
+  geom_text(data = d.text[d.text$gear == "E Fishing",],
+            aes(y = year, x = 410, label = paste0("n = ", as.character(count))),
+            vjust = -.5, hjust = 1, color = "#F46D43",
+            size = 5) +
+  geom_text(data = d.text[d.text$gear == "Hoop",],
+            aes(y = year, x = 470, label = paste0("n = ", as.character(count))),
+            vjust = -.5, hjust = 1, color = "#FDAE61",
+            size = 5) +
+  geom_text(data = d.text[d.text$gear == "Seine",],
+            aes(y = year, x = 520, label = paste0("n = ", as.character(count))),
+            vjust = -.5, hjust = 1, color = "#3288BD",
+            size = 5) +
+  
   labs(y = "", x = "Total Length (mm)", title = "Insert Title Here")
 p
 
 
 p2 = p + theme_base()
+# p2 = p + ggthemes::theme_solarized_2(light = FALSE) 
 
 g = p2 + theme(panel.grid.major.y = element_line(colour = "gray"),
                panel.grid.minor  = element_line(colour = "white"),
@@ -150,11 +172,15 @@ g = p2 + theme(panel.grid.major.y = element_line(colour = "gray"),
                axis.title.y = element_text(size = 14, vjust = 1),
                axis.text.x = element_text(size = 12, colour = "black"),
                axis.text.y = element_text(size = 12, colour = "black"),
-               legend.position = c(.7,.975),
+               legend.position = c(.85,.975),
+               # legend.key.width = unit(1, "cm"),
+               panel.border = element_blank(),
+               panel.background = element_blank(),
+               axis.line = element_line(colour = "black"),
                legend.title = element_blank()) +
                guides(color = guide_legend(nrow = 1), fill = guide_legend(nrow = 1))
 
-g
+g 
 
 
 #-----------------------------------------------------------------------------#
@@ -164,11 +190,10 @@ dat.3 = dat.2[dat.2$species_code %in% c("HBC"),]
 
 dat.4 = dat.3[dat.3$gear == "Seine",]
 
-tab = table(dat.4$year)
+d.text = select(dat.4, year, gear, species_code) %>%
+         group_by(year, gear) %>%
+         summarise(count = n())
 
-d.text = data.frame(year = attributes(tab)$dimnames[[1]],
-                    lab = tab,
-                    gear = NA)
 
 p = ggplot(dat.4, aes(x = total_length, y = year, fill = gear)) +
   geom_density_ridges(alpha = .75)+
@@ -176,9 +201,9 @@ p = ggplot(dat.4, aes(x = total_length, y = year, fill = gear)) +
   # scale_color_manual(values = c("#3288BD"), guide = "none") +
   scale_x_continuous(expand = c(0.01, 0)) +
   scale_y_discrete(expand = c(0.01, 0)) +
-  geom_text(data = d.text, aes(y = year, x = 400,
-                               label = paste0("n = ",as.character(lab.Freq))),
-            color = "#3288BD", vjust = -1.5) +
+  geom_text(data = d.text, aes(y = year, x = 420,
+                               label = paste0("n = ",as.character(count))),
+            color = "#3288BD", vjust = -.5, hjust = 1, size =5) +
   labs(y = "", x = "Total Length (mm)", title = "Humpback Chub")
 p
 
@@ -191,6 +216,9 @@ g = p2 + theme(panel.grid.major.y = element_line(colour = "gray"),
                axis.title.y = element_text(size = 14, vjust = 1),
                axis.text.x = element_text(size = 12, colour = "black"),
                axis.text.y = element_text(size = 12, colour = "black"),
+               panel.border = element_blank(),
+               panel.background = element_blank(),
+               axis.line = element_line(colour = "black"),
                legend.position = c(.7,.975),
                legend.title = element_blank()) +
   guides(color = guide_legend(nrow = 1), fill = guide_legend(nrow = 1))

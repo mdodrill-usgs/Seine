@@ -43,9 +43,12 @@ N.hbc = N.dat[N.dat$species == "HBC",]
 #-----------------------------------------------------------------------------#
 
 
-b0 <- gam(my.mean ~ s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
+b0 <- gam(log(my.mean) ~ s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
+# b0 <- gam(log(my.mean) ~ s(river_mile, bs = "cr"), data = N.hbc, method = "REML")
+# b0 <- gam(my.mean ~ s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
 # b0 <- gam(my.mean ~ s(river_mile, bs = "ad"), data = N.hbc, method = "REML")
 
+gam.check(b0)
 
 # plot.gam()
 # 
@@ -62,6 +65,11 @@ tmp = predict.gam(b0, newdata = new.dat, se.fit = TRUE)
 out = data.frame(y_hat = tmp$fit,
                  upper = tmp$fit + 2*tmp$se.fit,
                  lower = tmp$fit - 2*tmp$se.fit,
+                 river_mile = new.dat$river_mile)
+
+out = data.frame(y_hat = exp(tmp$fit),
+                 upper = exp(tmp$fit + 2*tmp$se.fit),
+                 lower = exp(tmp$fit - 2*tmp$se.fit),
                  river_mile = new.dat$river_mile)
 
 
@@ -83,15 +91,15 @@ u.yr = u.yr[!u.yr %in% c("2002", "2012", "2013")]
 for(i in 1:length(u.yr)){
   sub = N.hbc[N.hbc$year == u.yr[i],]
   
-  b0 <- gam(my.mean ~ s(river_mile, bs = "ps"), data = sub, method = "REML")
+  b0 <- gam(log(my.mean) ~ s(river_mile, bs = "ps"), data = sub, method = "REML")
   
   new.dat = data.frame(river_mile = seq(min(sub$river_mile),max(sub$river_mile),1))
   
   tmp = predict.gam(b0, newdata = new.dat, se.fit = TRUE)
   
-  out = data.frame(y_hat = tmp$fit,
-                   upper = tmp$fit + 2*tmp$se.fit,
-                   lower = tmp$fit - 2*tmp$se.fit,
+  out = data.frame(y_hat = exp(tmp$fit),
+                   upper = exp(tmp$fit + 2*tmp$se.fit),
+                   lower = exp(tmp$fit - 2*tmp$se.fit),
                    river_mile = new.dat$river_mile,
                    year = u.yr[i])
   
@@ -106,7 +114,7 @@ all.out = do.call('rbind', big.out)
 p = ggplot(all.out, aes(y = y_hat, x = river_mile)) +
   geom_line() +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .2) +
-  geom_point(data = N.hbc,aes(y = my.mean), shape = 1) +
+  geom_point(data = N.hbc, aes(y = my.mean), shape = 1) +
   # geom_errorbar(data = N.hbc, aes(y = my.mean,ymin = lower, ymax = upper)) +
   # geom_errorbar(aes(ymin = lower, ymax = upper)) +
   # coord_cartesian(ylim = c(0,50)) 
@@ -129,18 +137,17 @@ p = ggplot(all.out, aes(y = y_hat, x = river_mile)) +
 p
 
 
-b0 <- gam(my.mean ~ s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
-
-gam.check(b0,pch=19,cex=.3)
 
 #-----------------------------------------------------------------------------#
 
 
-b0 <- gam(my.mean ~ year + s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
-b1 <- gam(my.mean ~ s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
-b2 <- gam(my.mean ~ s(river_mile, bs = "ps", by = year), data = N.hbc, method = "REML")
+b0 <- gam(log(my.mean) ~ year + s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
+b1 <- gam(log(my.mean) ~ s(river_mile, bs = "ps"), data = N.hbc, method = "REML")
+b2 <- gam(log(my.mean) ~ s(river_mile, bs = "ps", by = year), data = N.hbc, method = "REML")
 
-AIC(b0, b1, b2)
+b3 <- lm(log(my.mean) ~ year, data = N.hbc)
+
+AIC(b0, b1, b2, b3)
 
 
 new.dat.2 = data.frame(river_mile = 200,
@@ -149,17 +156,41 @@ new.dat.2 = data.frame(river_mile = 200,
 
 
 tmp = predict.gam(b0, newdata = new.dat.2, se.fit = TRUE)
-tmp = predict.gam(b2, newdata = new.dat.2, se.fit = TRUE)
+# tmp = predict.gam(b2, newdata = new.dat.2, se.fit = TRUE)
 
 
-out.2 = data.frame(y_hat = tmp$fit,
-                   upper = tmp$fit + 2*tmp$se.fit,
-                   lower = tmp$fit - 2*tmp$se.fit,
+out.2 = data.frame(y_hat = exp(tmp$fit),
+                   upper = exp(tmp$fit + 2*tmp$se.fit),
+                   lower = exp(tmp$fit - 2*tmp$se.fit),
                    year = new.dat.2$year)
 
 p = ggplot(out.2, aes(y = y_hat, x = year))+
   geom_point() +
   geom_errorbar(aes(ymin = lower, ymax = upper))
+p
+
+
+
+new.dat.3 = data.frame(river_mile = seq(min(N.hbc$river_mile),max(N.hbc$river_mile),1),
+                       year = 2016)
+
+
+
+tmp = predict.gam(b0, newdata = new.dat.3, se.fit = TRUE)
+
+
+out.3 = data.frame(y_hat = exp(tmp$fit),
+                   upper = exp(tmp$fit + 2*tmp$se.fit),
+                   lower = exp(tmp$fit - 2*tmp$se.fit),
+                   river_mile = seq(min(N.hbc$river_mile),max(N.hbc$river_mile),1))
+
+out.3$river_km = out.3$river_mile * 1.60934
+
+# p = ggplot(out.3, aes(y = y_hat, x = river_km))+
+p = ggplot(out.3, aes(y = y_hat, x = river_mile))+
+  geom_line(size = 2) +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .2)
+  # geom_errorbar(aes(ymin = lower, ymax = upper))
 p
 
 

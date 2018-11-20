@@ -156,7 +156,7 @@ cat = left_join(catch, ltl.dat, by = c("sample_id"))
 
 
 # write.csv(cat, file = "SN_2016_data.csv", row.names = F)
+DBI::dbDisconnect(my_db)
 rm(list = setdiff(ls(), "cat"))
-dbDisconnect()
 #-----------------------------------------------------------------------------#
 # End

@@ -189,12 +189,28 @@ out.3$river_km = out.3$river_mile * 1.60934
 # p = ggplot(out.3, aes(y = y_hat, x = river_km))+
 p = ggplot(out.3, aes(y = y_hat, x = river_mile))+
   geom_line(size = 2) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .2)
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .2) +
+  scale_x_continuous(limits = c(0,250)) +
+  labs(y = "HBC YOY Index")
   # geom_errorbar(aes(ymin = lower, ymax = upper))
-p
+p = p + theme_base()
+
+
+# P:\BIOLOGICAL\Foodbase\LIGHT_TRAPS\CODE\\lt Jul25 for BQR figure
+# test is flow curve
+# test2 = bug response
+dat = read.csv("C:\\Users\\mdodrill\\Desktop\\test\\test.csv")
 
 
 
+p2 = ggplot(dat, aes(y = y, x = x * 0.621371))+
+  geom_line(size = 2) +
+  scale_x_continuous(limits = c(0,250)) +
+  labs(y = "water @ dusk", x = "river_mile")
+p2 = p2 + theme_base()
+
+
+grid.arrange(p,p2, ncol = 1)
 
 
 

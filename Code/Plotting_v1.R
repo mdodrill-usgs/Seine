@@ -41,7 +41,7 @@ p.dat$id = as.numeric(gsub("[^0-9]", "", as.character(p.dat$Parameter)))
 
 p.dat$species = sp.key.big[match(p.dat$id, sp.key.big$num),]$name
 
-sm.p.dat = sample_n(f2.sub, 20000) # cut data down for faster plotting
+sm.p.dat = sample_n(p.dat, 20000) # cut data down for faster plotting
 
 p = ggplot(p.dat, aes(x = value, group = Parameter)) +
   geom_density(color = "gray70", fill = "dodgerblue2", alpha = .2) +

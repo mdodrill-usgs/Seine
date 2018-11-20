@@ -197,8 +197,8 @@ p = p + theme_base()
 
 
 # P:\BIOLOGICAL\Foodbase\LIGHT_TRAPS\CODE\\lt Jul25 for BQR figure
-# test is flow curve
-# test2 = bug response
+# FB_Wave is flow curve
+# FB_LightTrap_Response = bug response
 dat = read.csv("C:\\Users\\mdodrill\\Desktop\\test\\test.csv")
 
 
@@ -212,5 +212,82 @@ p2 = p2 + theme_base()
 
 grid.arrange(p,p2, ncol = 1)
 
+
+#-----------------------------------------------------------------------------#
+N.fms = N.dat[N.dat$species == "FMS",]
+
+
+
+b0 <- gam(log(my.mean) ~ year + s(river_mile, bs = "ps"), data = N.fms, method = "REML")
+b1 <- gam(log(my.mean) ~ s(river_mile, bs = "ps"), data = N.fms, method = "REML")
+b2 <- gam(log(my.mean) ~ s(river_mile, bs = "ps", by = year), data = N.fms, method = "REML")
+
+b3 <- lm(log(my.mean) ~ year, data = N.fms)
+
+AIC(b0, b1, b2, b3)
+
+
+new.dat.4 = data.frame(expand.grid(river_mile = seq(min(N.fms$river_mile), max(N.fms$river_mile),5),
+                       year = unique(N.fms$year)))
+
+new.dat.4 = data.frame(expand.grid(river_mile = seq(min(N.fms$river_mile), max(N.fms$river_mile),5),
+                       year = unique(N.fms$year)[9]))
+
+
+
+tmp = predict.gam(b0, newdata = new.dat.4, se.fit = TRUE)
+# tmp = predict.gam(b2, newdata = new.dat.2, se.fit = TRUE)
+
+
+out.2 = data.frame(y_hat = exp(tmp$fit),
+                   upper = exp(tmp$fit + 2*tmp$se.fit),
+                   lower = exp(tmp$fit - 2*tmp$se.fit),
+                   year = new.dat.4$year,
+                   river_mile = new.dat.4$river_mile)
+
+p = ggplot(out.2, aes(y = y_hat, x = river_mile))+
+  geom_point() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .2) +
+  facet_wrap(~ year, scales = "free_y")
+p
+
+
+#-----------------------------------------------------------------------------#
+N.bhs = N.dat[N.dat$species == "BHS",]
+
+
+
+b0 <- gam(log(my.mean) ~ year + s(river_mile, bs = "ps"), data = N.bhs, method = "REML")
+b1 <- gam(log(my.mean) ~ s(river_mile, bs = "ps"), data = N.bhs, method = "REML")
+b2 <- gam(log(my.mean) ~ s(river_mile, bs = "ps", by = year), data = N.bhs, method = "REML")
+
+b3 <- lm(log(my.mean) ~ year, data = N.bhs)
+
+AIC(b0, b1, b2, b3)
+
+
+new.dat.4 = data.frame(expand.grid(river_mile = seq(min(N.bhs$river_mile), max(N.bhs$river_mile),5),
+                                   year = unique(N.bhs$year)))
+
+new.dat.4 = data.frame(expand.grid(river_mile = seq(min(N.bhs$river_mile), max(N.bhs$river_mile),5),
+                                   year = unique(N.bhs$year)[9]))
+
+
+
+tmp = predict.gam(b0, newdata = new.dat.4, se.fit = TRUE)
+# tmp = predict.gam(b2, newdata = new.dat.2, se.fit = TRUE)
+
+
+out.2 = data.frame(y_hat = exp(tmp$fit),
+                   upper = exp(tmp$fit + 2*tmp$se.fit),
+                   lower = exp(tmp$fit - 2*tmp$se.fit),
+                   year = new.dat.4$year,
+                   river_mile = new.dat.4$river_mile)
+
+p = ggplot(out.2, aes(y = y_hat, x = river_mile))+
+  geom_point() +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .2) +
+  facet_wrap(~ year, scales = "free_y")
+p
 
 

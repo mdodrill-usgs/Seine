@@ -10,7 +10,8 @@
 #  * Look into broom/tidy methods for output...tidybayes
 #
 ###############################################################################
-setwd('C:/Users/mdodrill/Desktop/Fish_Git/Seine/Data/')
+# setwd('C:/Users/mdodrill/Desktop/Fish_Git/Seine/Data/')
+setwd(paste0(getwd(), "/Data"))
 # rm(list = ls(all = TRUE))
 library(R2jags)
 
@@ -129,8 +130,8 @@ inits <- function() list(N = N_guess)
 
 catch[is.na(catch)] <- 0 
 
-# params = c("N", "p", "beta", "mean.p", "Ncat") 
-params = c("Ncat") 
+params = c("N", "p", "beta", "mean.p", "Ncat")
+# params = c("Ncat") 
 
 data.in = list(Nsamps_r = Nsamps_r, Npass_r = Npass_r, catch = catch, sp = sp, Nsp = Nsp, 
                sp2 = sp2, Nsamps_cat = Nsamps_cat, catch2 = catch2) 

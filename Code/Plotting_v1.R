@@ -1,6 +1,6 @@
 ###############################################################################
 #                                                                        Nov 18
-#           JAGS Model Fitting - 2 Stage MultSp Removal Model 
+#           Model Plotting - 2 Stage MultSp Removal Model 
 #
 #  Notes:
 #  *
@@ -13,6 +13,7 @@ library(ggplot2)
 library(ggmcmc)
 library(ggthemes)
 library(dplyr)
+library(RColorBrewer)
 
 # library(devtools)
 # install_github(repo = 'mdodrill-usgs/fishR')
@@ -50,11 +51,15 @@ p
 
 # facet by species
 p = ggplot(sm.p.dat, aes(x = value, group = Parameter)) +
-  geom_density(aes(color = species, fill = species), alpha = .2) +
+  # geom_density(aes(color = "black", fill = species), alpha = .4) +
+  geom_density(aes(fill = species), alpha = .4) +
+  # scale_fill_brewer(type = "div", palette = 9) +
   facet_wrap(~ species, scales = "free_y") +
+  labs(fill = "Species",
+       y = "Density", x = "Capture Probability") +
   theme_base() +
-  theme(legend.position = c(.85,.15)) +
-  guides(col = guide_legend(ncol = 3))
+  theme(legend.position = c(.875,.15)) +
+  guides(fill = guide_legend(ncol = 3))
 p
 
 
@@ -76,14 +81,30 @@ p = ggplot(mu.p.dat, aes(x = value, group = Parameter)) +
 p
 
 #--------------------------------------
+# only a couple
+specs = c("HBC", "FMS", "BHS", "SPD")
+sub.mu.p.dat = mu.p.dat[mu.p.dat$species %in% specs,]
+
+p = ggplot(sub.mu.p.dat, aes(x = value, group = Parameter)) +
+  geom_density(aes(color = species, fill = species), alpha = .2) +
+  # scale_fill_manual(values = ) + 
+  theme_base() +
+  theme(legend.position = c(.15,.85)) +
+  guides(col = guide_legend(ncol = 3))
+p
+
+#--------------------------------------
 # both the mean.p and individual p's, facet by species 
 
 p = ggplot(sm.p.dat, aes(x = value, group = Parameter)) +
-  geom_density(aes(color = species, fill = species), alpha = .2) +
-  geom_density(data = mu.p.dat, aes(x = value), color = "black", fill = "black", alpha = .2) +
+  geom_density(aes(color = species, fill = species), alpha = .4) +
+  geom_density(data = mu.p.dat, aes(x = value), color = "black",
+               fill = "black", alpha = .2) +
+  labs(fill = "Species", color = "Species",
+       y = "Density", x = "Capture Probability") +
   facet_wrap(~ species, scales = "free_y") +
   theme_base() +
-  theme(legend.position = c(.85,.15)) +
+  theme(legend.position = c(.875,.15)) +
   guides(col = guide_legend(ncol = 3))
 p
 

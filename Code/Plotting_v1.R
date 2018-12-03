@@ -14,16 +14,22 @@ library(ggmcmc)
 library(ggthemes)
 library(dplyr)
 library(RColorBrewer)
+library(gridExtra)
 
 # library(devtools)
 # install_github(repo = 'mdodrill-usgs/fishR')
 
 library(fishR)
 
-windows(record = T, xpos = 25, width = 12, height = 7)
+windows(record = T, xpos = 25, width = 12, height = 9)
 #-----------------------------------------------------------------------------#
 sp.key = data.frame(name = unique(d1_r$species),
-                    num = 1:Nsp)
+                    num = 1:Nsp,
+                    name2 = c("Black Bullhead", "Bluehead Sucker", "Common Carp",
+                              "Fathead Minnow", "Flannelmouth Sucker",
+                              "Humpback Chub", "Plains Killifish",
+                              "Rainbow Trout", "Red Shiner", "Speckled Dace",
+                              "Unknown Sucker"))
 
 sp.key.big = data.frame(name = d1_r$species,
                         num = 1:Nsamps_r)
@@ -33,6 +39,12 @@ rm.key = data.frame(river_mile = cat.2$start_rm,
                     sp = cat.2$species_code,
                     year = cat.2$year)
 
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+
+cols = gg_color_hue(9)
 #-----------------------------------------------------------------------------#
 # individual p's for all site, species
 
@@ -71,6 +83,7 @@ mu.p.dat = organize(fit = fit, par.name = "mean.p")
 mu.p.dat$id = as.numeric(gsub("[^0-9]", "", as.character(mu.p.dat$Parameter)))
 
 mu.p.dat$species = sp.key[match(mu.p.dat$id, sp.key$num),]$name
+mu.p.dat$lab = sp.key[match(mu.p.dat$id, sp.key$num),]$name2
 
 
 p = ggplot(mu.p.dat, aes(x = value, group = Parameter)) +
@@ -81,17 +94,7 @@ p = ggplot(mu.p.dat, aes(x = value, group = Parameter)) +
 p
 
 #--------------------------------------
-# only a couple
-specs = c("HBC", "FMS", "BHS", "SPD")
-sub.mu.p.dat = mu.p.dat[mu.p.dat$species %in% specs,]
 
-p = ggplot(sub.mu.p.dat, aes(x = value, group = Parameter)) +
-  geom_density(aes(color = species, fill = species), alpha = .2) +
-  # scale_fill_manual(values = ) + 
-  theme_base() +
-  theme(legend.position = c(.15,.85)) +
-  guides(col = guide_legend(ncol = 3))
-p
 
 #--------------------------------------
 # both the mean.p and individual p's, facet by species 
@@ -107,6 +110,9 @@ p = ggplot(sm.p.dat, aes(x = value, group = Parameter)) +
   theme(legend.position = c(.875,.15)) +
   guides(col = guide_legend(ncol = 3))
 p
+
+#--------------------------------------
+
 
 #-----------------------------------------------------------------------------#
 # Abundance

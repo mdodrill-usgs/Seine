@@ -118,6 +118,11 @@ dat
 
 # There are a lot of total lengths of 0 or 1, need to fix or exclude...
 
+dat$month = substr(dat$start_datetime, 6, 7)
+
+
+dat = dat[dat$month %in% c("07", "08", "09", "10"),]
+
 #-----------------------------------------------------------------------------#
 dat$gear = ifelse(dat$gear_code == "EL", "E Fishing", 
                   ifelse(dat$gear_code %in% c("HB", "HS"), "Hoop", "Seine"))
@@ -160,7 +165,7 @@ p = ggplot(dat.3, aes(x = total_length, y = year, fill = gear)) +
             vjust = -.5, hjust = 1, color = "#3288BD",
             size = 5) +
   
-  labs(y = "", x = "Total Length (mm)", title = "Insert Title Here")
+  labs(y = "", x = "Total Length (mm)", title = "Humpback Chub")
 p
 
 
@@ -169,12 +174,14 @@ p2 = p + theme_base()
 
 g = p2 + theme(panel.grid.major.y = element_line(colour = "gray"),
                panel.grid.minor  = element_line(colour = "white"),
-               axis.title.x = element_text(size = 14, vjust = -.1),
-               axis.title.y = element_text(size = 14, vjust = 1),
-               axis.text.x = element_text(size = 12, colour = "black"),
-               axis.text.y = element_text(size = 12, colour = "black"),
+               axis.title.x = element_text(size = 18, vjust = -.1),
+               axis.title.y = element_text(size = 18, vjust = 1),
+               axis.text.x = element_text(size = 16, colour = "black"),
+               axis.text.y = element_text(size = 16, colour = "black"),
                legend.position = c(.85,.975),
-               # legend.key.width = unit(1, "cm"),
+               legend.text = element_text(size = 16),
+               legend.key = element_rect(size = 10),
+               legend.key.size = unit(1.5, 'lines'),
                panel.border = element_blank(),
                panel.background = element_blank(),
                axis.line = element_line(colour = "black"),
@@ -201,9 +208,9 @@ p = ggplot(dat.4, aes(x = total_length, y = year, fill = gear)) +
   geom_density_ridges(alpha = .75)+
   scale_fill_manual(values = c("#3288BD")) +
   # scale_color_manual(values = c("#3288BD"), guide = "none") +
-  scale_x_continuous(expand = c(0.01, 0), limits = c(0,525)) +
+  scale_x_continuous(expand = c(0.01, 0), limits = c(0,525), breaks = seq(0, 525, 50)) +
   scale_y_discrete(expand = c(0.01, 0)) +
-  geom_text(data = d.text, aes(y = year, x = 420,
+  geom_text(data = d.text, aes(y = year, x = 520,
                                label = paste0("n = ",as.character(count))),
             color = "#3288BD", vjust = -.5, hjust = 1, size =5) +
   labs(y = "", x = "Total Length (mm)", title = "Humpback Chub")
@@ -214,22 +221,22 @@ p2 = p + theme_base()
 
 g = p2 + theme(panel.grid.major.y = element_line(colour = "gray"),
                panel.grid.minor  = element_line(colour = "white"),
-               axis.title.x = element_text(size = 14, vjust = -.1),
-               axis.title.y = element_text(size = 14, vjust = 1),
-               axis.text.x = element_text(size = 12, colour = "black"),
-               axis.text.y = element_text(size = 12, colour = "black"),
+               axis.title.x = element_text(size = 18, vjust = -.1),
+               axis.title.y = element_text(size = 18, vjust = 1),
+               axis.text.x = element_text(size = 16, colour = "black"),
+               axis.text.y = element_text(size = 16, colour = "black"),
+               legend.position = c(.95,.975),
+               legend.text = element_text(size = 16),
+               legend.key = element_rect(size = 10),
+               legend.key.size = unit(1.5, 'lines'),
                panel.border = element_blank(),
                panel.background = element_blank(),
                axis.line = element_line(colour = "black"),
-               legend.position = c(.7,.975),
                legend.title = element_blank()) +
   guides(color = guide_legend(nrow = 1), fill = guide_legend(nrow = 1))
 
-g
+g 
 
-
-
-#-----------------------------------------------------------------------------#
 #-----------------------------------------------------------------------------#
 # Seine + hoops
 dat.2 = dat[which(dat$total_length >=10 ),]
@@ -247,7 +254,7 @@ p = ggplot(dat.4, aes(x = total_length, y = year, fill = gear)) +
   geom_density_ridges(alpha = .75)+
   scale_fill_manual(values = c("#FDAE61", "#3288BD")) +
   # scale_color_manual(values = c("#3288BD"), guide = "none") +
-  scale_x_continuous(expand = c(0.01, 0), limits = c(0,525)) +
+  scale_x_continuous(expand = c(0.01, 0), limits = c(0,525), breaks = seq(0, 525, 50)) +
   scale_y_discrete(expand = c(0.01, 0)) +
   # geom_text(data = d.text, aes(y = year, x = 420,
   #                              label = paste0("n = ",as.character(count))),
@@ -255,6 +262,10 @@ p = ggplot(dat.4, aes(x = total_length, y = year, fill = gear)) +
   geom_text(data = d.text[d.text$gear == "Seine",],
             aes(y = year, x = 520, label = paste0("n = ", as.character(count))),
             vjust = -.5, hjust = 1, color = "#3288BD",
+            size = 5) +
+  geom_text(data = d.text[d.text$gear == "Hoop",],
+            aes(y = year, x = 470, label = paste0("n = ", as.character(count))),
+            vjust = -.5, hjust = 1, color = "#FDAE61",
             size = 5) +
   labs(y = "", x = "Total Length (mm)", title = "Humpback Chub")
 p
@@ -264,14 +275,17 @@ p2 = p + theme_base()
 
 g = p2 + theme(panel.grid.major.y = element_line(colour = "gray"),
                panel.grid.minor  = element_line(colour = "white"),
-               axis.title.x = element_text(size = 14, vjust = -.1),
-               axis.title.y = element_text(size = 14, vjust = 1),
-               axis.text.x = element_text(size = 12, colour = "black"),
-               axis.text.y = element_text(size = 12, colour = "black"),
+               axis.title.x = element_text(size = 18, vjust = -.1),
+               axis.title.y = element_text(size = 18, vjust = 1),
+               axis.text.x = element_text(size = 16, colour = "black"),
+               axis.text.y = element_text(size = 16, colour = "black"),
+               legend.position = c(.9,.975),
+               legend.text = element_text(size = 16),
+               legend.key = element_rect(size = 10),
+               legend.key.size = unit(1.5, 'lines'),
                panel.border = element_blank(),
                panel.background = element_blank(),
                axis.line = element_line(colour = "black"),
-               legend.position = c(.7,.975),
                legend.title = element_blank()) +
   guides(color = guide_legend(nrow = 1), fill = guide_legend(nrow = 1))
 
@@ -280,7 +294,16 @@ g
 
 
 #-----------------------------------------------------------------------------#
+
+
+#-----------------------------------------------------------------------------#
 # for coop 
+
+dat.2 = dat[which(dat$total_length >=10 ),]
+
+dat.3 = dat.2[dat.2$species_code %in% c("HBC"),]
+
+dat.4 = dat.3[dat.3$gear == "Seine",]
 
 ltl.dat = dat.4[dat.4$year == "2018",]
 

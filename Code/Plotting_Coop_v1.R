@@ -21,7 +21,7 @@ library(gridExtra)
 
 library(fishR)
 
-windows(record = T, xpos = 25, width = 12, height = 9)
+windows(record = T, xpos = 25, width = 12, height = 9) # preserved 4:3 ratio
 #-----------------------------------------------------------------------------#
 sp.key = data.frame(name = unique(d1_r$species),
                     num = 1:Nsp,

@@ -17,7 +17,7 @@ library(ggridges)
 library(RColorBrewer)
 library(fishR)
 
-windows(record = TRUE, xpos = 25, height = 12, width = 10)
+windows(record = TRUE, xpos = 25, height = 9, width = 12)
 #-----------------------------------------------------------------------------#
 # connect to db
 # my_db = src_sqlite(path = db_path, create = FALSE)
@@ -122,18 +122,19 @@ dat
 dat$gear = ifelse(dat$gear_code == "EL", "E Fishing", 
                   ifelse(dat$gear_code %in% c("HB", "HS"), "Hoop", "Seine"))
 
-dat.2 = dat[which(dat$total_length >=5 ),]
+dat.2 = dat[which(dat$total_length >= 10),]
 
 # dat.3 = dat.2[dat.2$species_code %in% c("HBC", "FMS"),]
 dat.3 = dat.2[dat.2$species_code %in% c("HBC"),]
 
 # dat.4 = dat.3[dat.3$total_length <= 100,]
-d.text = select(dat.3, year, gear, species_code) %>%
+d.text = select(dat.3, year, gear, species_code, total_length) %>%
   group_by(year, gear) %>%
-  summarise(count = n())
+  summarise(count = n(), median = median(total_length))
 
 
-display.brewer.pal(11,"Spectral");brewer.pal(11,"Spectral")
+
+# display.brewer.pal(11,"Spectral");brewer.pal(11,"Spectral")
 
 p = ggplot(dat.3, aes(x = total_length, y = year, fill = gear)) +
   geom_density_ridges(alpha = .85)+
@@ -184,7 +185,8 @@ g
 
 
 #-----------------------------------------------------------------------------#
-dat.2 = dat[which(dat$total_length >=5 ),]
+# Just Seine
+dat.2 = dat[which(dat$total_length >=10 ),]
 
 dat.3 = dat.2[dat.2$species_code %in% c("HBC"),]
 
@@ -199,7 +201,7 @@ p = ggplot(dat.4, aes(x = total_length, y = year, fill = gear)) +
   geom_density_ridges(alpha = .75)+
   scale_fill_manual(values = c("#3288BD")) +
   # scale_color_manual(values = c("#3288BD"), guide = "none") +
-  scale_x_continuous(expand = c(0.01, 0)) +
+  scale_x_continuous(expand = c(0.01, 0), limits = c(0,525)) +
   scale_y_discrete(expand = c(0.01, 0)) +
   geom_text(data = d.text, aes(y = year, x = 420,
                                label = paste0("n = ",as.character(count))),
@@ -227,5 +229,83 @@ g
 
 
 
+#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
+# Seine + hoops
+dat.2 = dat[which(dat$total_length >=10 ),]
+
+dat.3 = dat.2[dat.2$species_code %in% c("HBC"),]
+
+dat.4 = dat.3[dat.3$gear %in% c("Seine", "Hoop"),]
+
+d.text = select(dat.4, year, gear, species_code) %>%
+         group_by(year, gear) %>%
+         summarise(count = n())
+
+
+p = ggplot(dat.4, aes(x = total_length, y = year, fill = gear)) +
+  geom_density_ridges(alpha = .75)+
+  scale_fill_manual(values = c("#FDAE61", "#3288BD")) +
+  # scale_color_manual(values = c("#3288BD"), guide = "none") +
+  scale_x_continuous(expand = c(0.01, 0), limits = c(0,525)) +
+  scale_y_discrete(expand = c(0.01, 0)) +
+  # geom_text(data = d.text, aes(y = year, x = 420,
+  #                              label = paste0("n = ",as.character(count))),
+  #           color = "#3288BD", vjust = -.5, hjust = 1, size =5) +
+  geom_text(data = d.text[d.text$gear == "Seine",],
+            aes(y = year, x = 520, label = paste0("n = ", as.character(count))),
+            vjust = -.5, hjust = 1, color = "#3288BD",
+            size = 5) +
+  labs(y = "", x = "Total Length (mm)", title = "Humpback Chub")
+p
+
+
+p2 = p + theme_base()
+
+g = p2 + theme(panel.grid.major.y = element_line(colour = "gray"),
+               panel.grid.minor  = element_line(colour = "white"),
+               axis.title.x = element_text(size = 14, vjust = -.1),
+               axis.title.y = element_text(size = 14, vjust = 1),
+               axis.text.x = element_text(size = 12, colour = "black"),
+               axis.text.y = element_text(size = 12, colour = "black"),
+               panel.border = element_blank(),
+               panel.background = element_blank(),
+               axis.line = element_line(colour = "black"),
+               legend.position = c(.7,.975),
+               legend.title = element_blank()) +
+  guides(color = guide_legend(nrow = 1), fill = guide_legend(nrow = 1))
+
+g
+
+
+
+#-----------------------------------------------------------------------------#
+# for coop 
+
+ltl.dat = dat.4[dat.4$year == "2018",]
+
+
+p = ggplot(ltl.dat, aes(x = total_length)) +
+    geom_histogram(fill = c("#3288BD"), alpha = .75, color = "black", binwidth = 4) +
+    geom_density(fill = c("#3288BD"), alpha = .5, aes(y = 4 * ..count..)) +
+    scale_x_continuous(breaks = seq(20, 100, 10)) +
+    annotate("text",label = "Total Count = 253", x = 22, y = 70, size = 6) +
+    labs(y = "Count", x = "Total Length (mm)", title = "Humpback Chub - 2018")
+
+p
+
+
+g = p + theme(panel.grid.major.y = element_line(colour = "white"),
+               panel.grid.minor  = element_line(colour = "white"),
+               axis.title.x = element_text(size = 18, vjust = -.1),
+               axis.title.y = element_text(size = 18, vjust = 1),
+               axis.text.x = element_text(size = 16, colour = "black"),
+               axis.text.y = element_text(size = 16, colour = "black"),
+               title = element_text(size = 20), 
+               panel.border = element_blank(),
+               panel.background = element_blank(),
+               axis.line = element_line(colour = "black"))
+
+g
 
 #-----------------------------------------------------------------------------#

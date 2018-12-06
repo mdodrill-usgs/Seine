@@ -149,7 +149,7 @@ p = ggplot(N.hbc, aes(y = my.mean, x = river_mile)) +
 
 p 
 
-
+# write.table(N.hbc, file = "SN.N.hbc.dat.csv", sep = ",", row.names = F)
 #-----------------------------------------------------------------------------#
 # End
 

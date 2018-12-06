@@ -248,7 +248,7 @@ p = ggplot(N.hbc.sub, aes(y = my.mean, x = river_mile)) +
   geom_errorbar(aes(ymin = lower, ymax = upper), alpha = .25, color = "#00C19F") +
   geom_point(color = "black", shape = 1, alpha = .25) +
   # geom_smooth(se = TRUE, method = "lm", color = "#00C19F") +
-  # geom_smooth(se = TRUE, color = "#00C19F") +
+  geom_smooth(se = TRUE, color = "#00C19F") +
   labs(x = "River Mile", y = "Abundance +- 95% CRI", title = "Humpback Chub") +
   scale_x_continuous(breaks = seq(0,250,50)) +
   coord_cartesian(ylim = c(0, 100)) +
@@ -345,7 +345,7 @@ p = ggplot(out.3, aes(y = y_hat, x = river_mile))+
   geom_line(size = 2) +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = .2) +
   scale_x_continuous(limits = c(0,220)) +
-  labs(y = "HBC Abundance +-95% CI\n (reference Year - 2016)",
+  labs(y = "YOY HBC N Index +-95% CI\n (reference Year - 2016)",
        x = "River Mile") +
   theme(legend.position = "none",
         title = element_text(size = 18),
@@ -380,17 +380,18 @@ bug$y2 = scale(bug$y) * mean(dat$y, na.rm = T)/2 + 60
 
 p2 = ggplot(dat, aes(y = y, x = x * 0.621371))+
   geom_line(size = 2) +
-  geom_line(data = bug, aes(y = y2, x = x * 0.621371), color = "red", size = 2) +
+  # geom_line(data = bug, aes(y = y2, x = x * 0.621371), color = "red", size = 2) +
   scale_x_continuous(limits = c(0,220)) +
-  annotate("text", x = 150, y = 150, label = "Average Midge Abundance",
-           color = "red", size = 8)+
+  # annotate("text", x = 150, y = 150, label = "Average Midge Abundance",
+  #          color = "red", size = 8)+
   labs(y = "water @ dusk", x = "River Mile") +
   theme(legend.position = "none",
         title = element_text(size = 18),
         strip.text.x = element_text(size = 18),
         axis.title = element_text(size = 18),
         axis.text.x = element_text(size = 16, colour = "black"),
-        axis.text.y = element_text(size = 16, colour = "black"),
+        # axis.text.y = element_text(size = 16, colour = "black"),
+        axis.text.y = element_blank(),
         strip.text = element_text(vjust = 1),
         strip.background = element_blank(),
         panel.spacing = unit(.5, "lines"),

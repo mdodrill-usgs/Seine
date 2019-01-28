@@ -7,31 +7,21 @@
 #  * Run Get_SN_Data_v1
 #
 #  To Do:
-#  * Split brms example out
 #  * Add covariates - temperature, temp.diff, other?
 #  * See if LOO will work...?
 #  * Think about CAR models for the site effects
 #
 ###############################################################################
 library(rstan)
-library (brms)
+library(brms)
 library(ggplot2)
 library(reshape2)
 
 rstan_options (auto_write=TRUE)
 options (mc.cores=parallel::detectCores ()) # Run on multiple cores
 
-setwd("C:/Users/mdodrill/Desktop/Seine-master (3)/Seine-master/Code")
-#-----------------------------------------------------------------------------#
-# example from brms...
-# set.seed (3875)
-# 
-# ir <- data.frame (scale (iris[, -5]), Species=iris[, 5])
-# 
-# b2 <- brm(Species ~ Petal.Length + Petal.Width + Sepal.Length + Sepal.Width,
-#           data = ir, family = "categorical",
-#           # n.chains = 3, n.iter = 3000, n.warmup = 600,
-#           prior = c(set_prior("normal (0, 8)")))
+# setwd("C:/Users/mdodrill/Desktop/Seine-master (3)/Seine-master/Code")
+setwd(paste0(getwd(), "/Code_Multinomial"))
 #-----------------------------------------------------------------------------#
 # format for categorical 
 dat.18 = cat[cat$year == "2018",]
@@ -72,59 +62,6 @@ key$rm = cat[match(key$site, cat$sample_id),]$start_rm
 all$rm = key[match(all$site, key$site),]$rm
 
 #-----------------------------------------------------------------------------#
-u.sub = unique(all$sample.id)[1:20]
-
-# ltl = all[1001:1500,]
-# ltl$site = as.factor(c(rep("site_1", 250), rep("site_2", 250)))
-
-ltl = all[which(all$sample.id %in% u.sub),]
-ltl$site = as.factor(ltl$sample.id)
-
-
-# all$site = as.factor(all$sample.id)
-
-
-# b2 <- brm(species ~ site,
-          # data = all, family = "categorical")
-          # n.chains = 3, n.iter = 3000, n.warmup = 600,
-          # prior = c(set_prior("normal (0, 8)")))
-
-
-
-b2 <- brm(species ~ site,
-          data = ltl, family = "categorical")
-
-stancode(b2)
-test = standata(b2)
-
-
-pred = predict(b2)
-
-pred.2 = as.data.frame(pred)
-
-pred.2$site = ltl$site
-
-pred.3 = melt(pred.2, id.vars = "site")
-
-
-p = ggplot(pred.3, aes(x = value)) +
-    geom_density(aes(color = variable, fill = variable)) +
-    facet_wrap(~ site)
-p
-
-
-summ = group_by(pred.3, site, variable) %>%
-       summarise(mean = mean(value)) %>% 
-       as.data.frame()
-
-summ$rm
-
-p2 = ggplot(summ, aes(x = variable, y = mean)) +
-     geom_point(aes(color = site))
-p2
-
-
-#-----------------------------------------------------------------------------#
 # site as a fixed effect (doesn't work well w/o good priors - not default)
 # data.in = brms::make_standata(species ~ site,
 #                     data = all, family = "categorical")
@@ -145,6 +82,21 @@ data.in = make_standata(species ~ (1|site), data = all, family = "categorical")
 make_stancode(species ~ (1|site),
               data = all, family = "categorical", save_model = "test_2.stan")
 
+ni = 250
+nt = 1
+nb = 100
+nc = 3
+
+
+fit.1 = brm(species ~ (1|site),
+             data = all, family = "categorical",
+             chains = nc, iter = ni, warmup = nb, thin = nt)
+
+# loo(fit.1) # warning see kfold
+
+
+# rm(list=setdiff(ls(), "fit.1"))
+
 #--------------------------------------
 # site as a random effect & spline on rm
 
@@ -157,6 +109,38 @@ make_stancode(species ~ (1|site) + s(rm, bs = "ps"),
               data = all, family = "categorical",
               save_model = "test_3.stan")
 
+#--------------------------------------
+# 
+# north <- 1:10
+# Grid <- expand.grid(north)
+# K <- nrow(Grid)
+# # set up distance and neighbourhood matrices
+# distance <- as.matrix(dist(Grid))
+# W <- array(0, c(K, K))
+# W[distance == 1] <- 1
+
+
+u.site = key[order(key$rm),]$site
+Grid <- expand.grid(u.site)
+K <- nrow(Grid)
+# set up distance and neighbourhood matrices
+distance <- as.matrix(dist(Grid))
+W <- array(0, c(K, K))
+W[distance == 1] <- 1
+
+rownames(W) = levels(all$site) # thougt I saw this somewhere...
+
+
+
+ni = 1000
+nt = 1
+nb = 500
+nc = 3
+
+
+fit.1 = brm(species ~ site, autocor = cor_car(W),
+            data = all, family = "categorical")#,
+            # chains = nc, iter = ni, warmup = nb, thin = nt)
 
 #-----------------------------------------------------------------------------#
 # run the model with rstan  
@@ -196,18 +180,22 @@ windows(record = TRUE, xpos = 25)
 fishR::stan_trace(fit = fit, par.name = "b_muFMS", number = 1:6)
 fishR::stan_trace(fit = fit, par.name = "sd_1", number = 1:6)
 fishR::stan_trace(fit = fit, par.name = "Z_1", number = 1:6)
+fishR::stan_trace(fit = fit, par.name = "bs_muSPD", number = 1:6)
 
 
 tmp = fishR::bayes_summary(fit = fit, par.name = "Z_1")
 
 
+#-----------------------------------------------------------------------------#
 
 
 
-# 
-# key = data.frame(site = unique(all.2$site))
-# key$num = seq(1, nrow(key), 1)
-# key$rm = cat[match(key$site, cat$sample_id),]$start_rm
-# 
-# all.2$rm = key[match(all.2$site, key$site),3]
+
+
+
+
+
+
+
+
 #-----------------------------------------------------------------------------#

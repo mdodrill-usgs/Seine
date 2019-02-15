@@ -17,6 +17,7 @@ library(brms)
 library(fishR)
 library(ggplot2)
 library(bayesplot)
+library(plyr)
 
 options(mc.cores = parallel::detectCores())
 windows(record = TRUE, xpos = 25)
@@ -146,20 +147,27 @@ p2 = proc.time()
 
 # ltl = sub[sub$year == 2018,]
 
-sub = cat[cat$year == 2018,]
+sub = cat[cat$year %in% c("2009", "2015", "2016", "2017", "2018"),]
 sub = sub[sub$species_code == "FMS",]
 
 
-sub$site = as.factor(round(sub$start_rm))
+
 
 sub2 = sub[order(sub$start_rm),]
 
-# x = c(1:length(ltl$river_mile))
-x = c(1:max(sub$start_rm))
-# x = as.numeric(sub2$site)
-# x = round(sub2$start_rm)
+sub2$site = as.factor(round_any(sub2$start_rm, 10))
 
-x = c(1,2,3,4,6)
+sub2$site2 = as.factor(as.numeric(as.factor(sub2$site)))
+
+
+# x = c(1,2,3,4,6)
+
+
+
+# x = sub$start_rm
+x = round_any(sub2$start_rm, 10)
+
+x = as.numeric(as.factor(x))
 
 tmp = dist(x)
 
@@ -171,23 +179,45 @@ tmp3 = as.matrix(tmp2)
 
 tmp3[is.na(tmp3)] <- 0
 
-View(tmp3[1:10,1:10])
+# View(tmp3[1:10,1:10])
 
 W = tmp3
 
 
 
+# fit2 = brm(tot.catch ~ 1, data = sub, family = "negbinomial", autocor = cor_car(W), chains = 3, iter = 1000)
 
-fit1 = brm(count ~ 1, data = ltl, family = "negbinomial")
+fit.1 = brm(tot.catch ~ year + (1|site2), data = sub2, family = "negbinomial", autocor = cor_car(W),
+            chains = 3, iter = 2000)#, control = list(adapt_delta = .99, max_treedepth = 11))
 
-fit2 = brm(count ~ site, data = sub, family = "negbinomial", autocor = cor_car(W))
-fit2 = brm(count ~ 1, data = ltl, family = "negbinomial", autocor = cor_car(W))
 
-fit3 = brm(count ~ river_, data = ltl, family = "Poisson")
-fit4 = brm(count ~ 1, data = ltl, family = "Poisson", autocor = cor_car(W))
 
-loo(fit1,fit2)
+new.dat = data.frame(expand.grid(year = 2018, site2 = unique(sub2$site2)))
+new.dat$year = as.factor(new.dat$year)
 
-kfold(fit1, fit2)
+test = predict(fit.1, newdata = new.dat, re_formula = ~ year + (1|site2))
+
+
+sub2$est = test[,1]
+
+
+p = ggplot(sub2, aes(x = site2, y = tot.catch)) +
+    geom_jitter(color = "red") +
+    geom_jitter(aes(y = est), color = "black")
+p
+
+
+
+fit.2 = brm(tot.catch ~ (1|site2), data = sub2, family = "negbinomial", chains = 3, iter = 1000)
+
+
+loo(fit.1,fit.2)
+waic(fit.1)
+# kfold(fit1, fit2)
+
+#-----------------------------------------------------------------------------#
+
+library(shinystan)
+launch_shinystan(fit.1)
 
 #-----------------------------------------------------------------------------#

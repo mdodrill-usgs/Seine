@@ -1,6 +1,6 @@
 ###############################################################################
 #                                                                        Aug 18
-#           Extracting Fish Data for 2 Stage MultSp Removal Model 
+#           Extracting Fish Data (Counts) for Neg. Binom Models
 #
 #  Notes:
 #  * Now uses the R package, fishR !
@@ -133,7 +133,7 @@ dat
 # summary table of catch by size bin 
 
 catch = group_by(dat, sample_id, species_code) %>%
-  summarise(tot.catch = n()) %>%
+  dplyr::summarise(tot.catch = n()) %>%
   ungroup() %>%
   complete(sample_id, species_code, fill = list(tot.catch = 0)) %>%
   filter(!is.na(species_code))  # order of when you filter matters here

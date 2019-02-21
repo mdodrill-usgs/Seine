@@ -5,11 +5,11 @@
 #  Notes:
 #  * Now uses the R package, fishR !
 #  * Run Get_SN_Data_count_v1
+#  * loo won't work for comparisions
 #
 #  To Do:
 #  * Add covariates - temperature, temp.diff, other?
-#  * See if LOO will work...?
-#  * Think about CAR models for the site effects
+#  * Think about CAR models for the site effects - working on this...
 #
 ###############################################################################
 library(rstan)
@@ -143,21 +143,39 @@ p2 = proc.time()
 
 
 #-----------------------------------------------------------------------------#
+# Schmidt and Graf 1990
+schmidt = data.frame(name = c("Permian Section",
+                              "Supai Gorge",
+                              "Redwall Gorge",
+                              "Lower Marble Canyon",
+                              "Furnace Flats",
+                              "Upper Granite Gorge",
+                              "Aisles",
+                              "Middle Granite Gorge",
+                              "Muav Gorge",
+                              "Lower Canyon",
+                              "Lower Granite Gorge"),
+                     start = c(0, 11, 22.6, 40, 61.6, 77.5, 117.9, 125.6, 140, 160, 213.9),
+                     stop = c(10.9, 22.5, 35.9, 61.5, 77.4, 117.8, 125.5, 139.9, 159.9, 213.8, 225))
+#-----------------------------------------------------------------------------#
 # figure out CAR models here...
 
 # ltl = sub[sub$year == 2018,]
 
+
+
 sub = cat[cat$year %in% c("2009", "2015", "2016", "2017", "2018"),]
-sub = sub[sub$species_code == "FMS",]
+# sub = cat[cat$year %in% c("2009"),]
+sub = sub[sub$species_code == "HBC",]
 
-
+sub = cat[cat$species_code == "HBC",]
 
 
 sub2 = sub[order(sub$start_rm),]
 
 sub2$site = as.factor(round_any(sub2$start_rm, 10))
 
-sub2$site2 = as.factor(as.numeric(as.factor(sub2$site)))
+# sub2$site2 = as.factor(as.numeric(as.factor(sub2$site)))
 
 
 # x = c(1,2,3,4,6)
@@ -187,25 +205,29 @@ W = tmp3
 
 # fit2 = brm(tot.catch ~ 1, data = sub, family = "negbinomial", autocor = cor_car(W), chains = 3, iter = 1000)
 
-fit.1 = brm(tot.catch ~ year + (1|site2), data = sub2, family = "negbinomial", autocor = cor_car(W),
+# fit.1 = brm(tot.catch ~ year + (1|site2), data = sub2, family = "negbinomial", autocor = cor_car(W),
+            # chains = 3, iter = 2000)#, control = list(adapt_delta = .99, max_treedepth = 11))
+
+fit.1 = brm(tot.catch ~ year + (1|site), data = sub2, family = "negbinomial", autocor = cor_car(W),
             chains = 3, iter = 2000)#, control = list(adapt_delta = .99, max_treedepth = 11))
+stancode(fit.1)
 
 
-
-new.dat = data.frame(expand.grid(year = 2018, site2 = unique(sub2$site2)))
+new.dat = data.frame(expand.grid(year = 2009, site = unique(sub2$site)))
 new.dat$year = as.factor(new.dat$year)
 
-test = predict(fit.1, newdata = new.dat, re_formula = ~ year + (1|site2))
+
+test = predict(fit.1, newdata = new.dat, re_formula = ~ 1 + (1|site2))
+test = predict(fit.1)
 
 
 sub2$est = test[,1]
 
 
-p = ggplot(sub2, aes(x = site2, y = tot.catch)) +
+p = ggplot(sub2, aes(x = site, y = tot.catch)) +
     geom_jitter(color = "red") +
     geom_jitter(aes(y = est), color = "black")
 p
-
 
 
 fit.2 = brm(tot.catch ~ (1|site2), data = sub2, family = "negbinomial", chains = 3, iter = 1000)
@@ -216,6 +238,46 @@ waic(fit.1)
 # kfold(fit1, fit2)
 
 #-----------------------------------------------------------------------------#
+
+rand = as.data.frame(ranef(fit.1))
+rand$site = unique(sub2$site)
+names(rand)[1:4] = c("Est", "SD", "lower", "upper")
+
+
+p = ggplot(rand, aes(x = site, y = exp(Est +2))) +
+    geom_point() +
+    geom_errorbar(aes(ymax = exp(upper+2), ymin = exp(lower+2)), width = 0)
+p
+#-----------------------------------------------------------------------------#
+
+f.1 = as.data.frame(fixef(fit.1))
+
+fix = as.data.frame(matrix(NA, nrow = nrow(f.1), ncol = 4))
+
+for(i in 1:nrow(fix)){
+  if(i == 1){
+    fix[i,2] = f.1[i,1]
+    fix[i,3] = f.1[i,3]
+    fix[i,4] = f.1[i,4]
+  } else {
+    fix[i,2] = f.1[i,1] + f.1[1,1]
+    fix[i,3] = f.1[i,3] + f.1[1,1]
+    fix[i,4] = f.1[i,4] + f.1[1,1]
+  }
+}
+
+fix[,1] = sort(unique(sub2$year))
+names(fix) = c("year", "est", "lower", "upper")
+
+p2 = ggplot(fix, aes(x = year, y = exp(est))) +
+     geom_point() +
+     geom_errorbar(aes(ymax = exp(upper), ymin = exp(lower)), width = 0)
+
+p2
+
+#-----------------------------------------------------------------------------#
+
+
 
 library(shinystan)
 launch_shinystan(fit.1)
